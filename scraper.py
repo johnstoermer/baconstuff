@@ -1,7 +1,9 @@
 import math
+import time
 import requests
 from bs4 import BeautifulSoup
 import re
+import json
 
 class baconscraper:
 
@@ -11,9 +13,28 @@ class baconscraper:
         self._generateDict()
 
     def _generateDict(self):
-        for i in range(1,9):
-            self._addActor(i)
-            self._addMovie(i)
+        start = time.time()
+        for i in range(1,10):
+            try:
+                self._addActor(i)
+                print('Finished Actor ' + str(i))
+            except:
+                print('Finished Actors at Number ' + str(i))
+                break
+        end = time.time()
+        print('That took ' + str(end - start) + ' seconds (on average ' + str((end - start)/10) + ' seconds per actor)')
+        start = time.time()
+        for i in range(1,10):
+            try:
+                self._addMovie(i)
+                print('Finished Movie ' + str(i))
+            except:
+                print('Finished Movies at Number ' + str(i))
+                break
+        end = time.time()
+        print('That took ' + str(end - start) + ' seconds (on average ' + str((end - start)/10) + ' seconds per movie)')
+        with open('baconator.json', 'w', encoding='utf-8') as fp:
+            json.dump(self.dict, fp, ensure_ascii=False, indent=4, sort_keys=True)
 
     def _addActor(self, actor_id):
         movies = []
@@ -26,7 +47,7 @@ class baconscraper:
         #
         page = requests.get(url)
         soup = BeautifulSoup(page.content, 'html.parser')
-        name = soup.find('span', class_='itemprop').get_text()
+        name = soup.find('span', class_='itemprop').get_text() # TODO: check https://www.imdb.com/title/tt4000000/ and https://www.imdb.com/title/tt4154796/
         movie1 = soup.find('div', class_='filmo-category-section')
         movie2 = movie1.findAll('b')
         for movie in movie2:
@@ -75,6 +96,5 @@ class baconscraper:
 
 def main():
     b = baconscraper()
-    print(b.dict)
 
 main()
