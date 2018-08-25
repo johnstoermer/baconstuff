@@ -6,10 +6,7 @@ import re
 import json
 from multiprocessing import Pool
 
-dict = {'Actors':{}, 'Movies':{}}
-
 def addActor(actor_id):
-    global dict
     movies = []
     url = 'https://www.imdb.com/name/nm'
     #adding the actor_id to url
@@ -23,14 +20,12 @@ def addActor(actor_id):
     name = tree.xpath('//*[@id="overview-top"]/h1/span[1]/text()')[0]
     birthday = int(tree.xpath('//*[@id="name-born-info"]/time/a[2]/text()')[0])
     movies = tree.xpath('//*[starts-with(@id, "actor-tt")]/b/a/text()')
-    if name not in dict['Actors']:
-        dict['Actors'][name] = {}
-        dict['Actors'][name]['Birthday'] = birthday
-        dict['Actors'][name]['Movies'] = movies
+    dict = {}
+    dict['Birthday'] = birthday
+    dict['Movies'] = movies
+    return [dict, name]
 
 def addMovie(movie_id):
-    global dict
-    print(dict)
     start = time.time()
     url = 'https://www.imdb.com/title/tt'
     #adding the movie_id to url
@@ -44,6 +39,7 @@ def addMovie(movie_id):
     print(str(end - start))
     tree = html.fromstring(page.content)
     title = tree.xpath('//*[@id="title-overview-widget"]/div[2]/div[2]/div/div[2]/div[2]/h1/text()')[0].replace('\xa0', '')
+    print(title)
     rating = float(tree.xpath('//*[@id="title-overview-widget"]/div[2]/div[2]/div/div[1]/div[1]/div[1]/strong/span/text()')[0])
     reviews = int(tree.xpath('//*[@id="title-overview-widget"]/div[2]/div[2]/div/div[1]/div[1]/a/span/text()')[0].replace(',', ''))
     date = int(tree.xpath('//*[@id="titleYear"]/a/text()')[0])
@@ -63,27 +59,35 @@ def addMovie(movie_id):
             count += 1
         except:
             break
-    if title not in dict['Movies']:
-        [title] = {}
-        [title]['Rating'] = rating
-        [title]['Reviews'] = reviews
-        [title]['Genres'] = genres
-        [title]['Date'] = date
+    dict = {}
+    dict['Rating'] = rating
+    dict['Reviews'] = reviews
+    dict['Genres'] = genres
+    dict['Cast'] = cast
+    dict['Date'] = date
+    return [dict, title]
 
 
-def generateJSON():
-    global dict
-    print(dict)
+def generateJSON(dict):
     with open('baconator.json', 'w', encoding='utf-8') as fp:
         json.dump(dict, fp, ensure_ascii=False, indent=4, sort_keys=True)
         print('Generated JSON')
 
 def main():
-    p = Pool(2)
-    p.map(addMovie, (dict, range(1, 10)))
-    p.close()
-    p.join()
-    generateJSON()
+    dict = {'Actors': {}, 'Movies': {}}
+    with Pool(10) as p:
+        d = p.map(addActor, range(1, 100))
+        p.close()
+        p.join()
+        for a in d:
+            dict['Actors'][str(a[1])] = a[0]
+    with Pool(10) as p:
+        d = p.map(addMovie, range(1, 100))
+        p.close()
+        p.join()
+        for a in d:
+            dict['Movies'][str(a[1])] = a[0]
+    generateJSON(dict)
 
 if __name__ == '__main__':
     main()
