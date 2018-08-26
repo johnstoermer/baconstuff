@@ -6,7 +6,7 @@ import re
 import json
 from multiprocessing import Pool
 
-def addActor(actor_id): # TODO: Figure out why this is slower than addMovie (Average Speed ~0.13s)
+def addActor(actor_id):
     start = time.time()
     print(str(actor_id) + ' started')
     movies = []
@@ -37,7 +37,7 @@ def addMovie(movie_id): #Average Speed ~0.04s
     print(str(movie_id) + ' started')
     url = 'https://www.imdb.com/title/tt'
     #adding the movie_id to url
-    zeroes = 6 - math.floor(math.log10(movie_id)) #finding the number of zeroes in the movie_id
+    zeroes = 6 - math.floor(math.log10(movie_id))
     for i in range(0, zeroes):
         url += '0'
     url += str(movie_id) + '/'
@@ -83,10 +83,11 @@ def generateJSON(dict):
         json.dump(dict, fp, ensure_ascii=False, indent=4, sort_keys=True)
         print('Generated JSON')
 
-def main():
-    dict = {'Actors': {}, 'Movies': {}}
+def main(): #pool of 16 seems to get the best times
+    dict = {} #only working with movies, requesting pages takes too long and I can build the actor dictionary with the movie dictionary
+    '''
     start = time.time()
-    with Pool(20) as p:
+    with Pool(16) as p:
         d = p.map(addActor, range(1, 100))
         p.close()
         p.join()
@@ -95,14 +96,15 @@ def main():
                 dict['Actors'][str(a[1])] = a[0]
     end = time.time()
     print('Average Time per Actor: ' + str((end - start)/99))
+    '''
     start = time.time()
-    with Pool(20) as p:
+    with Pool(16) as p:
         d = p.map(addMovie, range(1, 100))
         p.close()
         p.join()
         for a in d:
             if a != None:
-                dict['Movies'][str(a[1])] = a[0]
+                dict[str(a[1])] = a[0]
     end = time.time()
     print('Average Time per Movie: ' + str((end - start)/99))
     generateJSON(dict)
